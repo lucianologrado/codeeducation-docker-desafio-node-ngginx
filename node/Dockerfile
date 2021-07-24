@@ -1,10 +1,9 @@
-FROM node:15
+FROM node:15 as builder
 
 WORKDIR /usr/src/app
 
 RUN apt-get update && apt-get install -y wget
 
-## ferramenta que ajuda a subir o app, mas espera o banco
 ENV DOCKERIZE_VERSION v0.6.1
 RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
     && tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz \
@@ -14,7 +13,12 @@ COPY index.js .
 COPY package.json .
 RUN npm install
 
-EXPOSE 3000
+FROM node:slim
 
+WORKDIR /usr/src/app
+
+COPY --from=builder /usr/local/bin/dockerize /usr/local/bin/
+COPY --from=builder /usr/src/app /usr/src/app/
+
+EXPOSE 3000
 ENTRYPOINT ["node", "index.js" ]
-#CMD [ "node", "index.js" ]
